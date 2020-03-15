@@ -18,14 +18,14 @@ class_freq <- data.frame(class_freq)
 # TODO: sort the class frequency in descending order
 # class_freq <- class_freq[order("Freq")]
 
-par(mar=c(3,11,1,1))
+par(mfrow=c(1,1),mar=c(3,11,1,1))
 barplot(class_freq$Freq, names.arg = class_freq$Var1, las=2, horiz =TRUE )
 
 serie0 <- subset(x = X_train, subset = series_id==0)
 serie1 <- subset(x = X_train, subset = series_id==1)
 serie2 <- subset(x = X_train, subset = series_id==2)
 serie3 <- subset(x = X_train, subset = series_id==3)
-par(mfrow=c(2,2))
+par(mfrow=c(2,2),mar=c(3,5,3,3))
 plot(serie0$orientation_W,type = 'l')
 plot(serie1$orientation_W, type = 'l')
 plot(serie2$orientation_W, type = 'l')
@@ -104,3 +104,13 @@ sub$series_id <- 0:num_of_series_test
 sub$surface <- pred
 
 write.csv(sub,file="sub.csv",row.names=FALSE)
+
+par(mfrow=c(1,3),mar=c(4,4,4,4))
+hist(X_train$angular_velocity_X,breaks = 2000)
+hist(X_train$angular_velocity_Y)
+hist(X_train$angular_velocity_Z)
+
+par(mfrow=c(1,3),mar=c(4,4,4,4))
+hist(X_train$linear_acceleration_X,breaks = 100)
+hist(X_train$linear_acceleration_Y,breaks = 100)
+hist(X_train$linear_acceleration_Z,breaks = 100)
