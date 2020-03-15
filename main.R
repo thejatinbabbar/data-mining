@@ -7,19 +7,20 @@ X_train <- read.csv('career-con-2019/X_train.csv')
 X_test <- read.csv('career-con-2019/X_test.csv')
 y_train <- read.csv('career-con-2019/y_train.csv')
 
+
 num_of_series <- length(unique(X_train$series_id))
 num_of_series_test <- length(unique(X_test$series_id))
 num_of_measurements <- length(unique(X_train$measurement_number))
 num_of_groups <- length(unique(y_train$group_id))
 num_of_classes <- length(unique(y_train$surface))
 
+
 class_freq <- table(y_train$surface)
 class_freq <- data.frame(class_freq)
-# TODO: sort the class frequency in descending order
 # class_freq <- class_freq[order("Freq")]
-
 par(mfrow=c(1,1),mar=c(3,11,1,1))
 barplot(class_freq$Freq, names.arg = class_freq$Var1, las=2, horiz =TRUE )
+
 
 serie0 <- subset(x = X_train, subset = series_id==0)
 serie1 <- subset(x = X_train, subset = series_id==1)
@@ -31,6 +32,7 @@ plot(serie1$orientation_W, type = 'l')
 plot(serie2$orientation_W, type = 'l')
 plot(serie3$orientation_W, type = 'l')
 
+
 mean_change_abs_change <- function (vector) {
   change <- diff(vector)
   abs_change <- abs(change)
@@ -39,12 +41,14 @@ mean_change_abs_change <- function (vector) {
   return(m_c_a_c)
 }
 
-df <- data.frame(matrix(ncol = 50, nrow = num_of_series))
-df_sub <- data.frame(matrix(ncol = 50, nrow = num_of_series_test))
-train_cols <- colnames(X_train)
-train_cols <- train_cols[4:13]
-df_cols <- list()
+
 funcs <- list("sum","max","min","mean","m_c_a_c")
+num_of_feat <- length(funcs) * (length(colnames(X_train)) - 3)
+df <- data.frame(matrix(ncol = num_of_feat, nrow = num_of_series))
+df_sub <- data.frame(matrix(ncol = num_of_feat, nrow = num_of_series_test))
+train_cols <- colnames(X_train)
+train_cols <- train_cols[4:length(colnames(X_train))]
+df_cols <- list()
 for (col in train_cols) {
   for (func in funcs) {
     name <- paste(col,func,sep = "_")
@@ -57,8 +61,8 @@ colnames(df_sub) <- df_cols
 
 i <- 1
 j <- 4
-funcs <- list(min,max,min,mean,min)
-while (i <= 50 & j <= 13) {
+funcs <- list(sum,max,min,mean,mean_change_abs_change)
+while (i <= num_of_feat & j <= length(colnames(X_train))) {
   for (func in funcs) {
     temp <- aggregate(X_train[[j]] ~ series_id, X_train, func)
     temp <- temp$'X_train[[j]]'
@@ -71,44 +75,43 @@ while (i <= 50 & j <= 13) {
   j <- j + 1
 }
 
+
 df$target <- y_train$surface
 ind <- sample(2,nrow(df),replace = TRUE,prob = c(0.7,0.3))
 train <- df[ind == 1,]
 test <- df[ind == 2,]
 
-library(randomForest)
 
+library(randomForest)
 rf <- randomForest(target~.,data=train)
 importance(rf)
-
-# TODO: change plot size
 varImpPlot(rf)
-
 pred <- predict(rf, newdata = test,type = "class")
 
-library(caret)
 
+library(caret)
 confusionMatrix(table(pred,test$target))
+
 
 rf2 <- randomForest(target~.,data = df)
 importance(rf2)
-
-# TODO: change plot size
 varImpPlot(rf2)
-
 pred <- predict(rf2, newdata = df_sub, type = "class")
+
+
 sub <- data.frame(matrix(ncol = 2, nrow = num_of_series_test))
 colnames(sub) <- list("series_id","surface")
 num_of_series_test <- num_of_series_test - 1
 sub$series_id <- 0:num_of_series_test
 sub$surface <- pred
-
 write.csv(sub,file="sub.csv",row.names=FALSE)
 
+
 par(mfrow=c(1,3),mar=c(4,4,4,4))
-hist(X_train$angular_velocity_X,breaks = 2000)
+hist(X_train$angular_velocity_X)
 hist(X_train$angular_velocity_Y)
 hist(X_train$angular_velocity_Z)
+
 
 par(mfrow=c(1,3),mar=c(4,4,4,4))
 hist(X_train$linear_acceleration_X,breaks = 100)
